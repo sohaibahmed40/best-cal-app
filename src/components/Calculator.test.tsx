@@ -1,0 +1,106 @@
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
+import Calculator from './Calculator';
+import { keyToAction } from './keyboard';
+
+// StrictMode double-mounts effects, so a leaked listener would double every key press.
+function setup() {
+  const user = userEvent.setup();
+  const utils = render(
+    <StrictMode>
+      <Calculator />
+    </StrictMode>,
+  );
+  const display = () => screen.getByTestId('display');
+  const click = (name: string) => user.click(screen.getByRole('button', { name }));
+  return { user, display, click, ...utils };
+}
+
+describe('7. clicks and keyboard', () => {
+  it('clicking 7 + 5 = shows 12', async () => {
+    const { display, click } = setup();
+    for (const name of ['7', 'add', '5', 'equals']) await click(name);
+    expect(display()).toHaveTextContent(/^12$/);
+  });
+
+  it('every button works by click', async () => {
+    const { display, click } = setup();
+    for (const name of ['9', 'divide', '3', 'multiply', '2', 'subtract', '1', 'decimal point', '5', 'equals']) {
+      await click(name);
+    }
+    expect(display()).toHaveTextContent(/^4\.5$/);
+    await click('toggle sign');
+    expect(display()).toHaveTextContent(/^-4\.5$/);
+
+    await click('all clear');
+    for (const name of ['5', '0', 'percent']) await click(name);
+    expect(display()).toHaveTextContent(/^0\.5$/);
+
+    await click('all clear');
+    for (const name of ['4', '6', '8', 'backspace']) await click(name);
+    expect(display()).toHaveTextContent(/^46$/);
+    await click('clear entry');
+    expect(display()).toHaveTextContent(/^0$/);
+  });
+
+  it('typing 6*7 Enter shows 42', async () => {
+    const { user, display } = setup();
+    await user.keyboard('6*7{Enter}');
+    expect(display()).toHaveTextContent(/^42$/);
+  });
+
+  it('Escape resets the display to 0', async () => {
+    const { user, display } = setup();
+    await user.keyboard('123{Escape}');
+    expect(display()).toHaveTextContent(/^0$/);
+  });
+
+  it('Backspace removes the last digit', async () => {
+    const { user, display } = setup();
+    await user.keyboard('123{Backspace}');
+    expect(display()).toHaveTextContent(/^12$/);
+  });
+
+  it('Delete, ., /, -, + and % work from the keyboard', async () => {
+    const { user, display } = setup();
+    await user.keyboard('12+34{Delete}5{Enter}');
+    expect(display()).toHaveTextContent(/^17$/);
+    await user.keyboard('{Escape}9/2-0.5{Enter}');
+    expect(display()).toHaveTextContent(/^4$/);
+    await user.keyboard('{Escape}200+10%{Enter}');
+    expect(display()).toHaveTextContent(/^220$/);
+  });
+
+  it('removes the keydown listener on unmount', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const { user, display, unmount } = setup();
+    await user.keyboard('5');
+    const output = display();
+    unmount();
+
+    const keydown = (spy: typeof add) => spy.mock.calls.filter(([type]) => type === 'keydown').map(([, fn]) => fn);
+    expect(keydown(add).length).toBeGreaterThan(0);
+    expect(keydown(remove)).toEqual(keydown(add));
+    await expect(user.keyboard('9{Escape}')).resolves.toBeUndefined();
+    expect(output).toHaveTextContent(/^5$/);
+    vi.restoreAllMocks();
+  });
+});
+
+describe('keyToAction', () => {
+  it('maps the documented keys', () => {
+    expect(keyToAction('7')).toEqual({ type: 'digit', value: '7' });
+    expect(keyToAction('.')).toEqual({ type: 'decimal' });
+    expect(keyToAction('/')).toEqual({ type: 'operator', value: '/' });
+    expect(keyToAction('Enter')).toEqual({ type: 'equals' });
+    expect(keyToAction('=')).toEqual({ type: 'equals' });
+    expect(keyToAction('Backspace')).toEqual({ type: 'backspace' });
+    expect(keyToAction('Escape')).toEqual({ type: 'clearAll' });
+    expect(keyToAction('Delete')).toEqual({ type: 'clearEntry' });
+    expect(keyToAction('%')).toEqual({ type: 'percent' });
+    expect(keyToAction('a')).toBeNull();
+  });
+});
