@@ -1,3 +1,32 @@
+/* Pastel claymorphism. Every colour, radius and shadow is a token here. */
+:root {
+  --bg: #eef0fb;
+  --surface: #e4dcff;
+  --display-bg: #f6f3ff;
+  --text: #2e2a47;
+  --text-muted: #5f5a7d;
+  --key: #fbfaff;
+  --key-fn: #c8f0dc;
+  --key-op: #ffd6c2;
+  --key-equals: #bfe1ff;
+  --focus: #7c5cff;
+
+  --radius-lg: 32px;
+  --radius-key: 20px;
+  --shadow-clay:
+    8px 10px 20px rgb(118 98 196 / 0.28),
+    -6px -6px 14px rgb(255 255 255 / 0.75),
+    inset 3px 3px 6px rgb(255 255 255 / 0.85),
+    inset -4px -5px 8px rgb(118 98 196 / 0.16);
+  --shadow-clay-pressed:
+    2px 3px 6px rgb(118 98 196 / 0.22),
+    inset 4px 4px 8px rgb(118 98 196 / 0.22),
+    inset -3px -3px 6px rgb(255 255 255 / 0.7);
+  --shadow-inset:
+    inset 5px 5px 12px rgb(118 98 196 / 0.22),
+    inset -5px -5px 12px rgb(255 255 255 / 0.95);
+}
+
 *,
 *::before,
 *::after {
@@ -7,9 +36,10 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #1c1f24;
-  color: #f4f5f7;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', 'Quicksand', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
 }
 
 .app {
@@ -23,69 +53,98 @@ body {
 .calculator {
   width: 100%;
   max-width: 360px;
-  padding: 16px;
-  border-radius: 20px;
-  background: #2a2e35;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-clay);
 }
 
 .display {
-  display: block;
-  min-height: 72px;
-  margin-bottom: 16px;
-  padding: 12px 8px;
+  margin-bottom: 20px;
+  padding: 14px 16px 12px;
+  border-radius: var(--radius-key);
+  background: var(--display-bg);
+  box-shadow: var(--shadow-inset);
   text-align: right;
-  font-size: 2.5rem;
+}
+
+.display-history {
+  min-height: 1.4em;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.display-main {
+  display: block;
+  min-height: 1.2em;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.display-main-long {
+  font-size: 1.6rem;
+  line-height: 1.3;
 }
 
 .keys {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .key {
   min-height: 56px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-key);
   font: inherit;
   font-size: 1.4rem;
+  font-weight: 700;
   cursor: pointer;
-  background: #3b4049;
-  color: #f4f5f7;
-}
-
-.key:hover {
-  filter: brightness(1.15);
+  background: var(--key);
+  color: var(--text);
+  box-shadow: var(--shadow-clay);
 }
 
 .key:active {
-  filter: brightness(0.9);
+  box-shadow: var(--shadow-clay-pressed);
+  transform: translateY(1px);
 }
 
 .key:focus-visible {
-  outline: 3px solid #ffd166;
-  outline-offset: 2px;
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.key-digit {
+  background: var(--key);
 }
 
 .key-fn {
-  background: #a5acb8;
-  color: #111317;
+  background: var(--key-fn);
 }
 
 .key-op {
-  background: #f39c12;
-  color: #111317;
+  background: var(--key-op);
 }
 
 .key-equals {
-  background: #1f6fbf;
-  color: #ffffff;
+  background: var(--key-equals);
 }
 
 .key-wide {
   grid-column: 1 / -1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .key {
+    transition:
+      box-shadow 120ms ease,
+      transform 120ms ease;
+  }
 }

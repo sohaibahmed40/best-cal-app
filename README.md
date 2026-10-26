@@ -36,6 +36,7 @@ npm run build   # type-check (strict) and build to dist/
   - With no pending operator, `x %` gives `x / 100` (`50 %` → `0.5`).
   - After `+` or `−`, `b %` gives `a × b / 100`, so `200 + 10 % =` → `220`.
   - After `×` or `÷`, `b %` gives `b / 100`, so `50 × 10 % =` → `5`.
+- **Expression line.** The display shows the calculation as it is typed (`20 +`, then `20 + 20`). After `=`, a small `20 + 20 =` line sits above the result until the next key.
 - **Divide by zero** shows `Error`. Only a digit (which starts a fresh calculation) or AC does anything until then.
 - **Display.** Results are rounded to 12 significant digits (`0.1 + 0.2` → `0.3`). Values of 1e12 or more, or below 1e-9, switch to exponential notation.
 
@@ -44,3 +45,4 @@ npm run build   # type-check (strict) and build to dist/
 - `src/calculator.ts`: pure calculator logic and the reducer. No React.
 - `src/components/Calculator.tsx`: the UI, driven by `useReducer` from button clicks and a `keydown` listener.
 - `src/components/keys.ts` and `keyboard.ts`: the button list and the keyboard mapping.
+- `src/components/Calculator.css`: pastel claymorphism, driven by design tokens (colours, radii, shadows) on `:root`.
