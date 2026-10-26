@@ -3,6 +3,9 @@
 
 export type Op = '+' | '-' | '*' | '/';
 
+/** Display glyphs for each operator, shared by the keys and the expression line. */
+export const OP_SYMBOLS: Record<Op, string> = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
 export type State = {
   display: string;
   accumulator: number | null;
@@ -14,6 +17,8 @@ export type State = {
   lastOperand: number | null;
   lastOperator: Op | null;
   error: boolean;
+  /** Shown above the result after `=`; cleared by the next action. */
+  lastExpression: string | null;
 };
 
 export type Action =
@@ -39,6 +44,7 @@ export function createState(): State {
     lastOperand: null,
     lastOperator: null,
     error: false,
+    lastExpression: null,
   };
 }
 
@@ -136,12 +142,17 @@ export function equals(state: State): State {
       ...done,
       lastOperator: state.operator,
       lastOperand: input,
+      lastExpression: `${formatNumber(state.accumulator)} ${OP_SYMBOLS[state.operator]} ${formatNumber(input)} =`,
     });
   }
   if (state.lastOperator !== null && state.lastOperand !== null) {
-    return withResult(state, compute(input, state.lastOperator, state.lastOperand), done);
+    return withResult(state, compute(input, state.lastOperator, state.lastOperand), {
+      ...done,
+      lastExpression: `${formatNumber(input)} ${OP_SYMBOLS[state.lastOperator]} ${formatNumber(state.lastOperand)} =`,
+    });
   }
-  return withResult(state, input, done);
+  // Set explicitly: withResult spreads the old state, which may hold a stale expression.
+  return withResult(state, input, { ...done, lastExpression: null });
 }
 
 export function clearAll(): State {
@@ -178,7 +189,7 @@ export function percent(state: State): State {
   return { ...withResult(state, result, { waitingForOperand: false }), overwrite: true };
 }
 
-export function reducer(state: State, action: Action): State {
+function apply(state: State, action: Action): State {
   switch (action.type) {
     case 'digit':
       return inputDigit(state, action.value);
@@ -199,4 +210,20 @@ export function reducer(state: State, action: Action): State {
     case 'percent':
       return percent(state);
   }
+}
+
+export function reducer(state: State, action: Action): State {
+  const next = apply(state, action);
+  return action.type === 'equals' ? next : { ...next, lastExpression: null };
+}
+
+/** The calculation being entered, e.g. `20 +` then `20 + 20`. */
+export function formatExpression(state: State): string {
+  if (state.error) return state.display;
+  if (state.operator !== null && state.accumulator !== null) {
+    const head = `${formatNumber(state.accumulator)} ${OP_SYMBOLS[state.operator]}`;
+    // The raw display keeps a trailing '.' visible while typing.
+    return state.waitingForOperand ? head : `${head} ${state.display}`;
+  }
+  return state.display;
 }

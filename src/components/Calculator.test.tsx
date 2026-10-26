@@ -14,8 +14,9 @@ function setup() {
     </StrictMode>,
   );
   const display = () => screen.getByTestId('display');
+  const history = () => screen.getByTestId('expression-history');
   const click = (name: string) => user.click(screen.getByRole('button', { name }));
-  return { user, display, click, ...utils };
+  return { user, display, history, click, ...utils };
 }
 
 describe('7. clicks and keyboard', () => {
@@ -102,5 +103,56 @@ describe('keyToAction', () => {
     expect(keyToAction('Delete')).toEqual({ type: 'clearEntry' });
     expect(keyToAction('%')).toEqual({ type: 'percent' });
     expect(keyToAction('a')).toBeNull();
+  });
+});
+
+describe('9. expression display', () => {
+  it('typing 20+20 shows the full expression', async () => {
+    const { user, display } = setup();
+    await user.keyboard('20+20');
+    expect(display()).toHaveTextContent(/^20 \+ 20$/);
+  });
+
+  it('clicking 2 0 + 2 0 shows the full expression', async () => {
+    const { display, click } = setup();
+    for (const name of ['2', '0', 'add', '2', '0']) await click(name);
+    expect(display()).toHaveTextContent(/^20 \+ 20$/);
+  });
+
+  it('shows the operator as soon as it is pressed', async () => {
+    const { display, click } = setup();
+    for (const name of ['2', '0', 'subtract']) await click(name);
+    expect(display()).toHaveTextContent(/^20 −$/);
+  });
+
+  it('after equals shows the expression above the result until the next key', async () => {
+    const { display, history, click } = setup();
+    for (const name of ['2', '0', 'add', '2', '0', 'equals']) await click(name);
+    expect(display()).toHaveTextContent(/^40$/);
+    expect(history()).toHaveTextContent(/^20 \+ 20 =$/);
+    await click('3');
+    expect(history()).toHaveTextContent(/^$/);
+    expect(display()).toHaveTextContent(/^3$/);
+  });
+
+  it('repeat equals shows the repeated step', async () => {
+    const { history, click } = setup();
+    for (const name of ['5', 'add', '2', 'equals', 'equals']) await click(name);
+    expect(history()).toHaveTextContent(/^7 \+ 2 =$/);
+  });
+
+  it('5 = and divide by zero leave the history empty', async () => {
+    const { display, history, click } = setup();
+    for (const name of ['5', 'equals']) await click(name);
+    expect(history()).toHaveTextContent(/^$/);
+    for (const name of ['divide', '0', 'equals']) await click(name);
+    expect(display()).toHaveTextContent(/^Error$/);
+    expect(history()).toHaveTextContent(/^$/);
+  });
+
+  it('long expressions get the smaller font', async () => {
+    const { user, display } = setup();
+    await user.keyboard('123456789*98765');
+    expect(display()).toHaveClass('display-main-long');
   });
 });

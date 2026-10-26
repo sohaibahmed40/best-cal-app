@@ -1,5 +1,5 @@
 import { useEffect, useReducer } from 'react';
-import { createState, reducer } from '../calculator';
+import { createState, formatExpression, reducer } from '../calculator';
 import { keyToAction } from './keyboard';
 import { KEYS } from './keys';
 import './Calculator.css';
@@ -20,11 +20,23 @@ export default function Calculator() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const expr = formatExpression(state);
+
   return (
     <section className="calculator" aria-label="Calculator">
-      <output className="display" aria-live="polite" data-testid="display">
-        {state.display}
-      </output>
+      <div className="display">
+        {/* No aria-live here: the main line already announces the calculation. */}
+        <div className="display-history" data-testid="expression-history">
+          {state.lastExpression ?? ''}
+        </div>
+        <output
+          className={expr.length > 12 ? 'display-main display-main-long' : 'display-main'}
+          aria-live="polite"
+          data-testid="display"
+        >
+          {expr}
+        </output>
+      </div>
       <div className="keys">
         {KEYS.map((key) => (
           <button
