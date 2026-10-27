@@ -235,6 +235,20 @@ body {
   grid-column: 1 / -1;
 }
 
+.key-sci {
+  font-size: 1.05rem;
+}
+
+/* Silver rather than faded text, so the DEG/RAD badge keeps AA contrast on the steel body. */
+.angle-unit {
+  display: block;
+  margin-bottom: 6px;
+  text-align: right;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--text-silver);
+}
+
 /* Effects layer. It is pure motion, so it only shows when motion is allowed. */
 .fx {
   position: absolute;

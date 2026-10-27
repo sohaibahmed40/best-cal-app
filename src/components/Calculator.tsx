@@ -58,6 +58,9 @@ export default function Calculator() {
 
   return (
     <section className={['calculator', ...modifiers].join(' ')} aria-label="Calculator">
+      <span className="angle-unit" data-testid="angle-unit">
+        {state.angleUnit.toUpperCase()}
+      </span>
       <div className="display">
         {/* No aria-live here: the main line already announces the calculation. */}
         <div className="display-history" data-testid="expression-history">
