@@ -17,6 +17,10 @@ function fxGroup(action: Action): FxGroup {
     case 'clearAll':
     case 'clearEntry':
     case 'backspace':
+    // The scientific keys share the fn plate colour, so they share its kanji too.
+    case 'unary':
+    case 'constant':
+    case 'toggleAngleUnit':
       return 'fn';
     case 'equals':
       return 'equals';

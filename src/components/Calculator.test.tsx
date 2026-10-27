@@ -257,6 +257,11 @@ describe('10. battle HUD effects', () => {
     expect(fx('.fx-kanji-op')).toHaveTextContent('斬');
     await click('backspace');
     expect(fx('.fx-kanji-fn')).toHaveTextContent('消');
+    for (const name of ['sine', 'pi', 'angle unit']) {
+      await click(name);
+      expect(fx('.fx-kanji-fn')).toHaveTextContent('消');
+      expect(fx('.fx-kanji-digit')).toBeNull();
+    }
     await click('equals');
     expect(fx('.fx-kanji')).toBeNull();
     expect(fx('.fx-slash')).toBeNull();

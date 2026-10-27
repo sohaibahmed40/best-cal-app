@@ -45,7 +45,7 @@ npm run build   # type-check (strict) and build to dist/
   - After `+` or `−`, `b %` gives `a × b / 100`, so `200 + 10 % =` → `220`.
   - After `×` or `÷`, `b %` gives `b / 100`, so `50 × 10 % =` → `5`.
 - **Expression line.** The display shows the calculation as it is typed (`20 +`, then `20 + 20`). After `=`, a small `20 + 20 =` line sits above the result until the next key.
-- **Effects.** Each press flashes a kanji (撃 digits, 斬 operators and %, 消 AC/CE/⌫); `=` stamps "決着 FINISH" and an error shows a "限界突破 SYSTEM BREAK" banner. The calculator gets `is-pending`, `is-result` or `is-error` to match. The effects layer is `aria-hidden`, sits outside the display, and only animates when `prefers-reduced-motion` allows it.
+- **Effects.** Each press flashes a kanji (撃 digits, 斬 operators and %, 消 AC/CE/⌫ and the scientific, π/e and DEG/RAD keys); `=` stamps "決着 FINISH" and an error shows a "限界突破 SYSTEM BREAK" banner. The calculator gets `is-pending`, `is-result` or `is-error` to match. The effects layer is `aria-hidden`, sits outside the display, and only animates when `prefers-reduced-motion` allows it.
 - **Divide by zero** shows `Error`. Only a digit (which starts a fresh calculation) or AC does anything until then.
 - **Scientific functions** apply to the displayed number and keep any pending operator: `9 + 16 √ =` gives `13`. Right after an operator they use the shown value, so `9 + √ =` gives `9 + 3`.
 - **π and e** replace the current entry: `2 × π =` gives `6.28318530718`.
