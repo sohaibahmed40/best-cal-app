@@ -45,4 +45,4 @@ npm run build   # type-check (strict) and build to dist/
 - `src/calculator.ts`: pure calculator logic and the reducer. No React.
 - `src/components/Calculator.tsx`: the UI, driven by `useReducer` from button clicks and a `keydown` listener.
 - `src/components/keys.ts` and `keyboard.ts`: the button list and the keyboard mapping.
-- `src/components/Calculator.css`: pastel claymorphism, driven by design tokens (colours, radii, shadows) on `:root`.
+- `src/components/Calculator.css`: dark shonen "Battle HUD" style, token-driven (colours, radii, shadows on `:root`), motion disabled under `prefers-reduced-motion`.

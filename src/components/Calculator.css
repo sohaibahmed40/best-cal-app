@@ -1,30 +1,44 @@
-/* Pastel claymorphism. Every colour, radius and shadow is a token here. */
+/* Dark shonen "Battle HUD". Every colour, radius and shadow is a token here. */
 :root {
-  --bg: #eef0fb;
-  --surface: #e4dcff;
-  --display-bg: #f6f3ff;
-  --text: #2e2a47;
-  --text-muted: #5f5a7d;
-  --key: #fbfaff;
-  --key-fn: #c8f0dc;
-  --key-op: #ffd6c2;
-  --key-equals: #bfe1ff;
-  --focus: #7c5cff;
+  --bg: #07080b;
+  --speed-line: rgb(224 16 47 / 0.07);
+  --grid-line: rgb(242 244 248 / 0.03);
+  --clear: rgb(0 0 0 / 0);
 
-  --radius-lg: 32px;
-  --radius-key: 20px;
-  --shadow-clay:
-    8px 10px 20px rgb(118 98 196 / 0.28),
-    -6px -6px 14px rgb(255 255 255 / 0.75),
-    inset 3px 3px 6px rgb(255 255 255 / 0.85),
-    inset -4px -5px 8px rgb(118 98 196 / 0.16);
-  --shadow-clay-pressed:
-    2px 3px 6px rgb(118 98 196 / 0.22),
-    inset 4px 4px 8px rgb(118 98 196 / 0.22),
-    inset -3px -3px 6px rgb(255 255 255 / 0.7);
-  --shadow-inset:
-    inset 5px 5px 12px rgb(118 98 196 / 0.22),
-    inset -5px -5px 12px rgb(255 255 255 / 0.95);
+  --steel-dark: #14161c;
+  --steel: #1e2129;
+  --steel-light: #2c303a;
+  --steel-edge: #3a3f4b;
+  --display-bg: #0b0d12;
+  --scanline: rgb(242 244 248 / 0.035);
+
+  --text: #f2f4f8;
+  --text-silver: #c9ced8;
+  --text-muted: #8a90a0;
+  --text-on-accent: #ffffff;
+  --text-on-gold: #07080b;
+
+  --crimson: #e0102f;
+  --crimson-deep: #9e0a22;
+  --hot: #ff3b3b;
+  --gold: #ffb000;
+  --hazard-dark: #07080b;
+  --key-flash: #f2f4f8;
+  --focus: #ffb000;
+
+  --aura-dim: rgb(224 16 47 / 0.25);
+  --aura-hot: rgb(255 59 59 / 0.7);
+  --shadow-deep: rgb(0 0 0 / 0.6);
+  --kanji-stroke: rgb(7 8 11 / 0.9);
+  --finish-burst: rgb(255 176 0 / 0.18);
+
+  --radius-lg: 0;
+  --radius-key: 0;
+  --cut-lg: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+  --cut-key: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  --shadow-body: drop-shadow(0 18px 28px var(--shadow-deep));
+  --shadow-key-pressed: inset 0 3px 10px var(--shadow-deep);
+  --shadow-display: inset 0 0 18px var(--aura-dim);
 }
 
 *,
@@ -36,10 +50,17 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
   color: var(--text);
-  font-family: 'Nunito', 'Quicksand', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto,
-    sans-serif;
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(115deg, var(--speed-line) 0 1px, var(--clear) 1px 34px),
+    linear-gradient(var(--grid-line) 1px, var(--clear) 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, var(--clear) 1px);
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px;
+  font-family: 'Impact', 'Arial Narrow Bold', system-ui, sans-serif;
 }
 
 .app {
@@ -50,28 +71,56 @@ body {
   padding: 16px;
 }
 
+/* The steel body is a pseudo-element so the aura drop-shadow follows the angled cut. */
 .calculator {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   max-width: 360px;
-  padding: 20px;
+  padding: 20px 18px 18px;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-clay);
+  filter: var(--shadow-body);
+}
+
+.calculator::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: var(--cut-lg);
+  background:
+    linear-gradient(135deg, var(--crimson) 0 26px, var(--clear) 26px),
+    linear-gradient(160deg, var(--steel), var(--steel-dark));
 }
 
 .display {
-  margin-bottom: 20px;
-  padding: 14px 16px 12px;
+  position: relative;
+  margin-bottom: 18px;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--crimson);
   border-radius: var(--radius-key);
   background: var(--display-bg);
-  box-shadow: var(--shadow-inset);
+  box-shadow: var(--shadow-display);
   text-align: right;
+  overflow: hidden;
+}
+
+/* Scanlines sit over the text but are faint enough not to cost contrast. */
+.display::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(var(--scanline) 0 1px, var(--clear) 1px 3px);
 }
 
 .display-history {
   min-height: 1.4em;
-  font-size: 1rem;
+  font-family: 'Arial Narrow Bold', 'Impact', system-ui, sans-serif;
+  font-size: 0.95rem;
   line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -80,9 +129,10 @@ body {
 .display-main {
   display: block;
   min-height: 1.2em;
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.6rem;
   line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -93,28 +143,63 @@ body {
   line-height: 1.3;
 }
 
+.calculator.is-result .display {
+  border-color: var(--gold);
+}
+
+.calculator.is-error .display {
+  border-color: var(--hot);
+}
+
 .keys {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
+/* Angled plate: ::before is the edge, ::after the fill. Only the plates are clipped,
+   so the focus outline on the button itself stays visible. */
 .key {
-  min-height: 56px;
+  --plate-edge: var(--steel-edge);
+  --plate-fill: linear-gradient(170deg, var(--steel-light), var(--steel));
+  position: relative;
+  isolation: isolate;
+  min-height: 54px;
   border: 0;
   border-radius: var(--radius-key);
-  font: inherit;
-  font-size: 1.4rem;
-  font-weight: 700;
-  cursor: pointer;
-  background: var(--key);
+  background: var(--clear);
   color: var(--text);
-  box-shadow: var(--shadow-clay);
+  font: inherit;
+  font-size: 1.45rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.key::before,
+.key::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  clip-path: var(--cut-key);
+}
+
+.key::before {
+  inset: 0;
+  background: var(--plate-edge);
+}
+
+.key::after {
+  inset: 2px;
+  background: var(--plate-fill);
 }
 
 .key:active {
-  box-shadow: var(--shadow-clay-pressed);
   transform: translateY(1px);
+}
+
+.key:active::after {
+  box-shadow: var(--shadow-key-pressed);
+  filter: brightness(1.35);
 }
 
 .key:focus-visible {
@@ -123,29 +208,239 @@ body {
 }
 
 .key-digit {
-  background: var(--key);
+  --plate-fill: linear-gradient(170deg, var(--steel), var(--steel-dark));
 }
 
 .key-fn {
-  background: var(--key-fn);
+  --plate-fill: linear-gradient(170deg, var(--steel-light), var(--steel));
+  color: var(--text-silver);
 }
 
 .key-op {
-  background: var(--key-op);
+  --plate-edge: var(--crimson);
+  --plate-fill: linear-gradient(170deg, var(--steel), var(--steel-dark));
 }
 
 .key-equals {
-  background: var(--key-equals);
+  --plate-edge: var(--gold);
+  --plate-fill: linear-gradient(170deg, var(--crimson), var(--crimson-deep));
+  color: var(--text-on-accent);
 }
 
 .key-wide {
   grid-column: 1 / -1;
 }
 
+/* Effects layer. It is pure motion, so it only shows when motion is allowed. */
+.fx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  clip-path: var(--cut-lg);
+  pointer-events: none;
+}
+
+.fx > * {
+  display: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .fx > * {
+    display: block;
+  }
+
+  .calculator.is-pending {
+    animation: aura 1.1s ease-in-out infinite alternate;
+  }
+
+  .calculator.is-error {
+    animation: shake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
   .key {
-    transition:
-      box-shadow 120ms ease,
-      transform 120ms ease;
+    transition: transform 80ms ease;
+  }
+
+  .key:active::after {
+    animation: plate-flash 160ms ease-out;
+  }
+
+  .fx-slash {
+    position: absolute;
+    top: 58%;
+    left: -10%;
+    width: 120%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--clear), var(--text), var(--crimson), var(--clear));
+    transform: rotate(-24deg) scaleX(0);
+    animation: slash 320ms ease-out forwards;
+  }
+
+  .fx-slash-fn {
+    background: linear-gradient(90deg, var(--clear), var(--text-silver), var(--clear));
+  }
+
+  .fx-kanji {
+    position: absolute;
+    top: 52%;
+    left: 50%;
+    font-size: 6rem;
+    line-height: 1;
+    color: var(--crimson);
+    -webkit-text-stroke: 2px var(--kanji-stroke);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+    animation: kanji 420ms ease-out forwards;
+  }
+
+  .fx-kanji-fn {
+    color: var(--text-silver);
+  }
+
+  .fx-finish {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: repeating-conic-gradient(
+      from 0deg at 50% 55%,
+      var(--finish-burst) 0deg 3deg,
+      var(--clear) 3deg 12deg
+    );
+    animation: finish-frame 1100ms ease-out forwards;
+  }
+
+  .fx-finish-text {
+    padding: 6px 16px;
+    background: var(--crimson);
+    color: var(--text-on-accent);
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    transform: skewX(-12deg);
+    animation: stamp 1100ms ease-out forwards;
+  }
+
+  .fx-break {
+    position: absolute;
+    top: 46%;
+    left: -10%;
+    width: 120%;
+    padding: 8px 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--gold) 0 14px,
+      var(--hazard-dark) 14px 28px
+    );
+    text-align: center;
+    transform: rotate(-8deg);
+    animation: hazard 1600ms ease-out forwards;
+  }
+
+  .fx-break-text {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--hazard-dark);
+    color: var(--gold);
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+  }
+}
+
+@keyframes aura {
+  from {
+    filter: var(--shadow-body) drop-shadow(0 0 6px var(--aura-dim));
+  }
+  to {
+    filter: var(--shadow-body) drop-shadow(0 0 22px var(--aura-hot));
+  }
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-6px) rotate(-0.6deg);
+  }
+  40%,
+  80% {
+    transform: translateX(6px) rotate(0.6deg);
+  }
+}
+
+@keyframes plate-flash {
+  from {
+    background: var(--key-flash);
+  }
+}
+
+@keyframes slash {
+  60% {
+    opacity: 1;
+    transform: rotate(-24deg) scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(-24deg) scaleX(1);
+  }
+}
+
+@keyframes kanji {
+  30% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+@keyframes finish-frame {
+  from {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  20% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: skewX(-12deg) scale(2.2);
+  }
+  15% {
+    opacity: 1;
+    transform: skewX(-12deg) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes hazard {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) translateX(-100%);
+  }
+  15% {
+    opacity: 1;
+    transform: rotate(-8deg) translateX(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
