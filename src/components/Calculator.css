@@ -201,6 +201,11 @@ body {
   filter: brightness(1.35);
 }
 
+/* Brightening the crimson plate would drop white text below 4.5:1, so equals darkens instead. */
+.key-equals:active::after {
+  filter: brightness(0.8);
+}
+
 .key:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
@@ -366,9 +371,10 @@ body {
   }
 }
 
+/* A ring, not a fill: a light plate under light text would read 1:1 for a frame. */
 @keyframes plate-flash {
   from {
-    background: var(--key-flash);
+    box-shadow: inset 0 0 0 3px var(--key-flash);
   }
 }
 

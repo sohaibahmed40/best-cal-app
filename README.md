@@ -37,6 +37,7 @@ npm run build   # type-check (strict) and build to dist/
   - After `+` or `−`, `b %` gives `a × b / 100`, so `200 + 10 % =` → `220`.
   - After `×` or `÷`, `b %` gives `b / 100`, so `50 × 10 % =` → `5`.
 - **Expression line.** The display shows the calculation as it is typed (`20 +`, then `20 + 20`). After `=`, a small `20 + 20 =` line sits above the result until the next key.
+- **Effects.** Each press flashes a kanji (撃 digits, 斬 operators and %, 消 AC/CE/⌫); `=` stamps "決着 FINISH" and an error shows a "限界突破 SYSTEM BREAK" banner. The calculator gets `is-pending`, `is-result` or `is-error` to match. The effects layer is `aria-hidden`, sits outside the display, and only animates when `prefers-reduced-motion` allows it.
 - **Divide by zero** shows `Error`. Only a digit (which starts a fresh calculation) or AC does anything until then.
 - **Display.** Results are rounded to 12 significant digits (`0.1 + 0.2` → `0.3`). Values of 1e12 or more, or below 1e-9, switch to exponential notation.
 

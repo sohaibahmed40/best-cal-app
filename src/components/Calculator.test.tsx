@@ -156,3 +156,77 @@ describe('9. expression display', () => {
     expect(display()).toHaveClass('display-main-long');
   });
 });
+
+describe('10. battle HUD effects', () => {
+  // The effects layer is aria-hidden decoration, so it is found by class, not by role.
+  function setupFx() {
+    const utils = setup();
+    const calculator = () => screen.getByRole('region', { name: 'Calculator' });
+    const fx = (selector: string) => utils.container.querySelector(`.fx ${selector}`);
+    return { ...utils, calculator, fx };
+  }
+
+  it('is-pending is set while an operator waits for its operand and cleared by the next digit', async () => {
+    const { calculator, click } = setupFx();
+    await click('2');
+    expect(calculator()).not.toHaveClass('is-pending');
+    await click('add');
+    expect(calculator()).toHaveClass('is-pending');
+    await click('3');
+    expect(calculator()).not.toHaveClass('is-pending');
+  });
+
+  it('is-result and the FINISH stamp show after equals and clear on the next key', async () => {
+    const { calculator, fx, click } = setupFx();
+    for (const name of ['2', 'add', '3']) await click(name);
+    expect(fx('.fx-finish')).toBeNull();
+    await click('equals');
+    expect(calculator()).toHaveClass('is-result');
+    expect(fx('.fx-finish')).toHaveTextContent('決着 FINISH');
+    await click('4');
+    expect(calculator()).not.toHaveClass('is-result');
+    expect(fx('.fx-finish')).toBeNull();
+  });
+
+  it('is-error and the SYSTEM BREAK banner show on divide by zero and clear on AC', async () => {
+    const { calculator, fx, click } = setupFx();
+    for (const name of ['5', 'divide', '0', 'equals']) await click(name);
+    expect(calculator()).toHaveClass('is-error');
+    expect(calculator()).not.toHaveClass('is-result');
+    expect(fx('.fx-break')).toHaveTextContent('限界突破 SYSTEM BREAK');
+    await click('all clear');
+    expect(calculator()).not.toHaveClass('is-error');
+    expect(fx('.fx-break')).toBeNull();
+  });
+
+  it('flashes the kanji for each key group, and none for equals', async () => {
+    const { fx, click } = setupFx();
+    expect(fx('.fx-kanji')).toBeNull();
+    await click('7');
+    expect(fx('.fx-kanji-digit')).toHaveTextContent('撃');
+    await click('multiply');
+    expect(fx('.fx-kanji-op')).toHaveTextContent('斬');
+    await click('backspace');
+    expect(fx('.fx-kanji-fn')).toHaveTextContent('消');
+    await click('equals');
+    expect(fx('.fx-kanji')).toBeNull();
+    expect(fx('.fx-slash')).toBeNull();
+  });
+
+  it('remounts the effects layer on every press, including keyboard input', async () => {
+    const { user, container } = setupFx();
+    const before = container.querySelector('.fx');
+    await user.keyboard('1');
+    const afterFirst = container.querySelector('.fx');
+    expect(afterFirst).not.toBe(before);
+    await user.keyboard('1');
+    expect(container.querySelector('.fx')).not.toBe(afterFirst);
+  });
+
+  it('keeps the effects text out of the display and accessibility tree', async () => {
+    const { display, container, click } = setupFx();
+    for (const name of ['5', 'divide', '0', 'equals']) await click(name);
+    expect(display()).toHaveTextContent(/^Error$/);
+    expect(container.querySelector('.fx')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
