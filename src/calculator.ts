@@ -2,6 +2,9 @@
 // and returns a new one, so the component and the tests share one reducer.
 
 export type Op = '+' | '-' | '*' | '/';
+export type UnaryFn = 'sqrt' | 'square' | 'reciprocal' | 'sin' | 'cos' | 'tan' | 'ln' | 'log' | 'factorial';
+export type Constant = 'pi' | 'e';
+export type AngleUnit = 'deg' | 'rad';
 
 export type State = {
   display: string;
@@ -14,6 +17,8 @@ export type State = {
   lastOperand: number | null;
   lastOperator: Op | null;
   error: boolean;
+  /** Survives AC and Error, like the mode switch on a real calculator. */
+  angleUnit: AngleUnit;
 };
 
 export type Action =
@@ -25,7 +30,10 @@ export type Action =
   | { type: 'clearEntry' }
   | { type: 'backspace' }
   | { type: 'toggleSign' }
-  | { type: 'percent' };
+  | { type: 'percent' }
+  | { type: 'unary'; value: UnaryFn }
+  | { type: 'constant'; value: Constant }
+  | { type: 'toggleAngleUnit' };
 
 const MAX_DIGITS = 15;
 
@@ -39,11 +47,16 @@ export function createState(): State {
     lastOperand: null,
     lastOperator: null,
     error: false,
+    angleUnit: 'deg',
   };
 }
 
-function errorState(): State {
-  return { ...createState(), display: 'Error', error: true };
+function reset(state: State): State {
+  return { ...createState(), angleUnit: state.angleUnit };
+}
+
+function errorState(state: State): State {
+  return { ...reset(state), display: 'Error', error: true };
 }
 
 /** Returns null when the result is not a finite number (division by zero or overflow). */
@@ -67,6 +80,55 @@ export function compute(a: number, op: Op, b: number): number | null {
   return Number.isFinite(result) ? result : null;
 }
 
+// Float noise: sin(180°) is 1.2e-16, not 0.
+const snap = (r: number) => (Math.abs(r) < 1e-12 ? 0 : r);
+
+const MAX_FACTORIAL = 170;
+
+/** Returns null when the input is outside the function's domain or the result is not finite. */
+export function computeUnary(fn: UnaryFn, x: number, unit: AngleUnit): number | null {
+  let result: number;
+  switch (fn) {
+    case 'sqrt':
+      if (x < 0) return null;
+      result = Math.sqrt(x);
+      break;
+    case 'square':
+      result = x * x;
+      break;
+    case 'reciprocal':
+      if (x === 0) return null;
+      result = 1 / x;
+      break;
+    case 'ln':
+      if (x <= 0) return null;
+      result = Math.log(x);
+      break;
+    case 'log':
+      if (x <= 0) return null;
+      result = Math.log10(x);
+      break;
+    case 'factorial':
+      if (x < 0 || !Number.isInteger(x) || x > MAX_FACTORIAL) return null;
+      result = 1;
+      for (let i = 2; i <= x; i++) result *= i;
+      break;
+    case 'sin':
+    case 'cos':
+    case 'tan': {
+      const rad = unit === 'deg' ? ((x % 360) * Math.PI) / 180 : x;
+      const s = snap(Math.sin(rad));
+      const c = snap(Math.cos(rad));
+      if (fn === 'sin') result = s;
+      else if (fn === 'cos') result = c;
+      else if (c === 0) return null;
+      else result = s / c;
+      break;
+    }
+  }
+  return Number.isFinite(result) ? result : null;
+}
+
 // String(n) switches to exponents below 1e-6; write those out in full.
 function toPlain(n: number): string {
   const s = String(n);
@@ -86,7 +148,7 @@ export function formatNumber(n: number): string {
 }
 
 function withResult(state: State, result: number | null, patch: Partial<State>): State {
-  if (result === null) return errorState();
+  if (result === null) return errorState(state);
   return { ...state, ...patch, display: formatNumber(result), overwrite: false };
 }
 
@@ -95,7 +157,7 @@ function startsNewNumber(state: State): boolean {
 }
 
 export function inputDigit(state: State, digit: string): State {
-  if (state.error) return { ...createState(), display: digit };
+  if (state.error) return { ...reset(state), display: digit };
   if (startsNewNumber(state)) {
     return { ...state, display: digit, waitingForOperand: false, overwrite: false };
   }
@@ -144,8 +206,8 @@ export function equals(state: State): State {
   return withResult(state, input, done);
 }
 
-export function clearAll(): State {
-  return createState();
+export function clearAll(state: State): State {
+  return reset(state);
 }
 
 export function clearEntry(state: State): State {
@@ -178,6 +240,23 @@ export function percent(state: State): State {
   return { ...withResult(state, result, { waitingForOperand: false }), overwrite: true };
 }
 
+/** Applies fn to the shown value; like %, the result becomes the operand and a pending operator stays. */
+export function applyUnary(state: State, fn: UnaryFn): State {
+  if (state.error) return { ...state };
+  const result = computeUnary(fn, parseFloat(state.display), state.angleUnit);
+  return { ...withResult(state, result, { waitingForOperand: false }), overwrite: true };
+}
+
+export function inputConstant(state: State, c: Constant): State {
+  const display = formatNumber(c === 'pi' ? Math.PI : Math.E);
+  if (state.error) return { ...reset(state), display, overwrite: true };
+  return { ...state, display, waitingForOperand: false, overwrite: true };
+}
+
+export function toggleAngleUnit(state: State): State {
+  return { ...state, angleUnit: state.angleUnit === 'deg' ? 'rad' : 'deg' };
+}
+
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'digit':
@@ -189,7 +268,7 @@ export function reducer(state: State, action: Action): State {
     case 'equals':
       return equals(state);
     case 'clearAll':
-      return clearAll();
+      return clearAll(state);
     case 'clearEntry':
       return clearEntry(state);
     case 'backspace':
@@ -198,5 +277,11 @@ export function reducer(state: State, action: Action): State {
       return toggleSign(state);
     case 'percent':
       return percent(state);
+    case 'unary':
+      return applyUnary(state, action.value);
+    case 'constant':
+      return inputConstant(state, action.value);
+    case 'toggleAngleUnit':
+      return toggleAngleUnit(state);
   }
 }

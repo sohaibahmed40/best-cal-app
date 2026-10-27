@@ -22,6 +22,9 @@ export default function Calculator() {
 
   return (
     <section className="calculator" aria-label="Calculator">
+      <span className="angle-unit" data-testid="angle-unit">
+        {state.angleUnit.toUpperCase()}
+      </span>
       <output className="display" aria-live="polite" data-testid="display">
         {state.display}
       </output>

@@ -21,6 +21,8 @@ export function keyToAction(key: string): Action | null {
       return { type: 'clearEntry' };
     case '%':
       return { type: 'percent' };
+    case '!':
+      return { type: 'unary', value: 'factorial' };
     default:
       return null;
   }
