@@ -26,6 +26,14 @@ npm run build   # type-check (strict) and build to dist/
 | ⌫      | `Backspace`        | Remove the last digit                       |
 | ±      | —                  | Toggle the sign                             |
 | %      | `%`                | Percent (see below)                         |
+| DEG/RAD | —                 | Switch the trig angle unit (shown above the display) |
+| π e    | —                  | Enter pi or Euler's number                  |
+| n!     | `!`                | Factorial                                   |
+| sin cos tan | —             | Trigonometry in the active angle unit       |
+| √      | —                  | Square root                                 |
+| ln log | —                  | Natural log and log base 10                 |
+| x²     | —                  | Square                                      |
+| 1/x    | —                  | Reciprocal                                  |
 
 ## Behaviour
 
@@ -37,6 +45,11 @@ npm run build   # type-check (strict) and build to dist/
   - After `+` or `−`, `b %` gives `a × b / 100`, so `200 + 10 % =` → `220`.
   - After `×` or `÷`, `b %` gives `b / 100`, so `50 × 10 % =` → `5`.
 - **Divide by zero** shows `Error`. Only a digit (which starts a fresh calculation) or AC does anything until then.
+- **Scientific functions** apply to the displayed number and keep any pending operator: `9 + 16 √ =` gives `13`. Right after an operator they use the shown value, so `9 + √ =` gives `9 + 3`.
+- **π and e** replace the current entry: `2 × π =` gives `6.28318530718`.
+- **Angle unit** starts in DEG and survives AC and Error; only a page reload resets it. Results within 1e-12 of zero show `0` (`sin 180` → `0`).
+- **Invalid function input** shows `Error`, with the same recovery as divide by zero: `√` of a negative, `ln` or `log` of 0 or less, `1/0`, `tan 90°`, and `n!` of a negative, a non-integer or a number above 170.
+- **Precision.** Functions work on the 12-digit display value, so in RAD `π tan` of `π/2` gives a very large number rather than `Error`.
 - **Display.** Results are rounded to 12 significant digits (`0.1 + 0.2` → `0.3`). Values of 1e12 or more, or below 1e-9, switch to exponential notation.
 
 ## Layout
