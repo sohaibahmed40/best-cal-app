@@ -49,7 +49,7 @@ npm run build   # type-check (strict) and build to dist/
 - **π and e** replace the current entry: `2 × π =` gives `6.28318530718`.
 - **Angle unit** starts in DEG and survives AC and Error; only a page reload resets it. Results within 1e-12 of zero show `0` (`sin 180` → `0`).
 - **Invalid function input** shows `Error`, with the same recovery as divide by zero: `√` of a negative, `ln` or `log` of 0 or less, `1/0`, `tan 90°`, and `n!` of a negative, a non-integer or a number above 170.
-- **Precision.** Functions work on the 12-digit display value, so in RAD `π tan` of `π/2` gives a very large number rather than `Error`.
+- **Precision.** Functions work on the 12-digit display value, so in RAD `tan` of π/2 (`1.57079632679`) gives a very large number rather than `Error`.
 - **Display.** Results are rounded to 12 significant digits (`0.1 + 0.2` → `0.3`). Values of 1e12 or more, or below 1e-9, switch to exponential notation.
 
 ## Layout
