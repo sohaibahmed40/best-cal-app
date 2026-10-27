@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { type Action, type Op, type State, createState, formatNumber, reducer } from './calculator';
+import { type Action, type Op, type State, type UnaryFn, createState, formatNumber, reducer } from './calculator';
 
-// Short-hand: '7' digit, '.' decimal, '+-*/' operators, '=' equals, 'AC', 'CE', '<' backspace, '±', '%'.
+// Short-hand: '7' digit, '.' decimal, '+-*/' operators, '=' equals, 'AC', 'CE', '<' backspace, '±', '%',
+// '√ x² 1/x sin cos tan ln log !' functions, 'π' and 'e' constants, 'RAD' toggles the angle unit.
 function toAction(token: string): Action {
   if (/^\d$/.test(token)) return { type: 'digit', value: token };
   switch (token) {
@@ -24,9 +25,28 @@ function toAction(token: string): Action {
       return { type: 'toggleSign' };
     case '%':
       return { type: 'percent' };
+    case 'π':
+      return { type: 'constant', value: 'pi' };
+    case 'e':
+      return { type: 'constant', value: 'e' };
+    case 'RAD':
+      return { type: 'toggleAngleUnit' };
   }
+  if (token in UNARY) return { type: 'unary', value: UNARY[token] };
   throw new Error(`unknown token ${token}`);
 }
+
+const UNARY: Record<string, UnaryFn> = {
+  '√': 'sqrt',
+  'x²': 'square',
+  '1/x': 'reciprocal',
+  sin: 'sin',
+  cos: 'cos',
+  tan: 'tan',
+  ln: 'ln',
+  log: 'log',
+  '!': 'factorial',
+};
 
 function fold(tokens: string[]): State {
   return tokens.map(toAction).reduce(reducer, createState());
@@ -190,5 +210,109 @@ describe('6. sign and percent', () => {
 
   it('a digit after % starts a new number', () => {
     expect(run('5 0 % 3')).toBe('3');
+  });
+});
+
+describe('8. scientific functions', () => {
+  it('√16 shows 4 and √2 shows 1.41421356237', () => {
+    expect(run('1 6 √')).toBe('4');
+    expect(run('2 √')).toBe('1.41421356237');
+  });
+
+  it('a function keeps the pending operator: 9 + √16 = shows 13', () => {
+    expect(run('9 + 1 6 √ =')).toBe('13');
+  });
+
+  it.each([
+    ['9 0 sin', '1'],
+    ['0 cos', '1'],
+    ['3 0 sin', '0.5'],
+    ['1 8 0 sin', '0'],
+    ['9 0 cos', '0'],
+    ['6 0 cos', '0.5'],
+    ['4 5 tan', '1'],
+    ['1 8 0 tan', '0'],
+  ])('DEG: %s shows %s', (seq, expected) => {
+    expect(run(seq)).toBe(expected);
+  });
+
+  it.each([
+    ['5 !', '120'],
+    ['0 !', '1'],
+    ['1 0 !', '3628800'],
+  ])('factorial: %s shows %s', (seq, expected) => {
+    expect(run(seq)).toBe(expected);
+  });
+
+  it('170! shows a finite exponential value', () => {
+    expect(run('1 7 0 !')).toBe('7.25741561531e+306');
+  });
+
+  it.each([
+    ['e ln', '1'],
+    ['1 0 0 log', '2'],
+    ['7 x²', '49'],
+    ['4 1/x', '0.25'],
+  ])('%s shows %s', (seq, expected) => {
+    expect(run(seq)).toBe(expected);
+  });
+
+  it('π and e enter their values', () => {
+    expect(run('π')).toBe('3.14159265359');
+    expect(run('e')).toBe('2.71828182846');
+    expect(run('2 * π =')).toBe('6.28318530718');
+  });
+
+  it('a digit after π starts a new number, and backspace leaves π alone', () => {
+    expect(run('π 3')).toBe('3');
+    expect(run('π <')).toBe('3.14159265359');
+  });
+
+  it.each(['4 ± √', '3 ± !', '2 . 5 !', '1 7 1 !', '0 ln', '5 ± log', '0 1/x', '9 0 tan'])(
+    '%s shows Error',
+    (seq) => {
+      expect(run(seq)).toBe('Error');
+    },
+  );
+
+  it('recovers from a function error like divide by zero', () => {
+    expect(run('4 ± √ 7')).toBe('7');
+    expect(run('4 ± √ +')).toBe('Error');
+    expect(run('4 ± √ sin')).toBe('Error');
+    expect(run('4 ± √ π')).toBe('3.14159265359');
+  });
+
+  it('functions are ignored after divide by zero', () => {
+    for (const key of ['√', '!', 'sin', 'x²']) {
+      expect(run(`5 / 0 = ${key}`)).toBe('Error');
+    }
+  });
+});
+
+describe('9. angle unit', () => {
+  it('starts in DEG and RAD toggles it', () => {
+    expect(createState().angleUnit).toBe('deg');
+    expect(fold(['RAD']).angleUnit).toBe('rad');
+    expect(fold(['RAD', 'RAD']).angleUnit).toBe('deg');
+  });
+
+  it.each([
+    ['RAD π sin', '0'],
+    ['RAD π cos', '-1'],
+    ['RAD 0 cos', '1'],
+  ])('%s shows %s', (seq, expected) => {
+    expect(run(seq)).toBe(expected);
+  });
+
+  it('survives AC and Error', () => {
+    expect(fold('RAD AC'.split(' ')).angleUnit).toBe('rad');
+    expect(fold('RAD 1 / 0 ='.split(' ')).angleUnit).toBe('rad');
+    expect(run('RAD 1 / 0 = 9 0 sin')).toBe('0.893996663601');
+  });
+
+  it('toggles in the error state without clearing it', () => {
+    const state = fold('1 / 0 = RAD'.split(' '));
+    expect(state.display).toBe('Error');
+    expect(state.angleUnit).toBe('rad');
   });
 });
