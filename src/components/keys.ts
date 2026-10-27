@@ -1,4 +1,4 @@
-import type { Action } from '../calculator';
+import type { Action, UnaryFn } from '../calculator';
 
 export type Key = {
   label: string;
@@ -14,8 +14,30 @@ const digit = (value: string): Key => ({
   className: 'key-digit',
 });
 
+const sci = (label: string, value: UnaryFn, ariaLabel: string): Key => ({
+  label,
+  action: { type: 'unary', value },
+  ariaLabel,
+  className: 'key-fn key-sci',
+});
+
 // Laid out row by row for a 4-column grid.
 export const KEYS: Key[] = [
+  { label: 'DEG/RAD', action: { type: 'toggleAngleUnit' }, ariaLabel: 'angle unit', className: 'key-fn key-sci' },
+  { label: 'π', action: { type: 'constant', value: 'pi' }, ariaLabel: 'pi', className: 'key-fn key-sci' },
+  { label: 'e', action: { type: 'constant', value: 'e' }, ariaLabel: "euler's number", className: 'key-fn key-sci' },
+  sci('n!', 'factorial', 'factorial'),
+
+  sci('sin', 'sin', 'sine'),
+  sci('cos', 'cos', 'cosine'),
+  sci('tan', 'tan', 'tangent'),
+  sci('√', 'sqrt', 'square root'),
+
+  sci('ln', 'ln', 'natural log'),
+  sci('log', 'log', 'log base 10'),
+  sci('x²', 'square', 'square'),
+  sci('1/x', 'reciprocal', 'reciprocal'),
+
   { label: 'AC', action: { type: 'clearAll' }, ariaLabel: 'all clear', className: 'key-fn' },
   { label: 'CE', action: { type: 'clearEntry' }, ariaLabel: 'clear entry', className: 'key-fn' },
   { label: '⌫', action: { type: 'backspace' }, ariaLabel: 'backspace', className: 'key-fn' },

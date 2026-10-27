@@ -90,6 +90,54 @@ describe('7. clicks and keyboard', () => {
   });
 });
 
+describe('scientific keys', () => {
+  it.each([
+    [['1', '6', 'square root'], '4'],
+    [['9', '0', 'sine'], '1'],
+    [['0', 'cosine'], '1'],
+    [['4', '5', 'tangent'], '1'],
+    [['5', 'factorial'], '120'],
+    [['1', '0', '0', 'log base 10'], '2'],
+    [["euler's number", 'natural log'], '1'],
+    [['7', 'square'], '49'],
+    [['4', 'reciprocal'], '0.25'],
+    [['pi'], '3.14159265359'],
+    [['2', 'multiply', 'pi', 'equals'], '6.28318530718'],
+  ])('clicking %j shows %s', async (names, expected) => {
+    const { display, click } = setup();
+    for (const name of names) await click(name);
+    expect(display().textContent).toBe(expected);
+  });
+
+  it('invalid input shows Error, and a digit recovers', async () => {
+    const { display, click } = setup();
+    for (const name of ['4', 'toggle sign', 'square root']) await click(name);
+    expect(display()).toHaveTextContent(/^Error$/);
+    await click('7');
+    expect(display()).toHaveTextContent(/^7$/);
+    for (const name of ['3', 'toggle sign', 'factorial']) await click(name);
+    expect(display()).toHaveTextContent(/^Error$/);
+  });
+
+  it('the indicator shows DEG, then RAD after clicking angle unit', async () => {
+    const { display, click } = setup();
+    const unit = () => screen.getByTestId('angle-unit');
+    expect(unit()).toHaveTextContent(/^DEG$/);
+    await click('angle unit');
+    expect(unit()).toHaveTextContent(/^RAD$/);
+    for (const name of ['pi', 'cosine']) await click(name);
+    expect(display()).toHaveTextContent(/^-1$/);
+    await click('all clear');
+    expect(unit()).toHaveTextContent(/^RAD$/);
+  });
+
+  it('typing 5! shows 120', async () => {
+    const { user, display } = setup();
+    await user.keyboard('5!');
+    expect(display()).toHaveTextContent(/^120$/);
+  });
+});
+
 describe('keyToAction', () => {
   it('maps the documented keys', () => {
     expect(keyToAction('7')).toEqual({ type: 'digit', value: '7' });
@@ -101,6 +149,7 @@ describe('keyToAction', () => {
     expect(keyToAction('Escape')).toEqual({ type: 'clearAll' });
     expect(keyToAction('Delete')).toEqual({ type: 'clearEntry' });
     expect(keyToAction('%')).toEqual({ type: 'percent' });
+    expect(keyToAction('!')).toEqual({ type: 'unary', value: 'factorial' });
     expect(keyToAction('a')).toBeNull();
   });
 });
