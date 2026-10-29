@@ -9,6 +9,7 @@ export function keyToAction(key: string): Action | null {
     case '-':
     case '*':
     case '/':
+    case '^':
       return { type: 'operator', value: key };
     case 'Enter':
     case '=':

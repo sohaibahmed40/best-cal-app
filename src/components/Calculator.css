@@ -70,15 +70,20 @@ body {
   padding: 16px;
 }
 
-/* The steel body is a pseudo-element so the aura drop-shadow follows the angled cut. */
+/* The steel body is a pseudo-element so the aura drop-shadow follows the angled cut.
+   Basic mode is 6 keys across and Scientific adds a 4-column panel, so both are wider than tall. */
 .calculator {
   position: relative;
   isolation: isolate;
   width: 100%;
-  max-width: 360px;
-  padding: 20px 18px 18px;
+  max-width: 560px;
+  padding: 16px 18px 18px;
   border-radius: var(--radius-lg);
   filter: var(--shadow-body);
+}
+
+.calculator.is-scientific {
+  max-width: 920px;
 }
 
 .calculator::before {
@@ -94,8 +99,8 @@ body {
 
 .display {
   position: relative;
-  margin-bottom: 18px;
-  padding: 12px 14px 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px 8px;
   border: 1px solid var(--crimson);
   border-radius: var(--radius-key);
   background: var(--display-bg);
@@ -150,10 +155,27 @@ body {
   border-color: var(--hot);
 }
 
-.keys {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.keypad {
+  display: flex;
   gap: 10px;
+}
+
+/* flex 6 : 4 with the same gap keeps every key the same width across both grids. */
+.keys,
+.keys-sci {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.keys {
+  flex: 6;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.keys-sci {
+  flex: 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* Angled plate: ::before is the edge, ::after the fill. Only the plates are clipped,
@@ -234,22 +256,98 @@ body {
   color: var(--text-on-accent);
 }
 
-.key-wide {
-  grid-column: 1 / -1;
-}
-
 .key-sci {
   font-size: 1.05rem;
 }
 
+.key-mem {
+  --plate-edge: var(--gold);
+  font-size: 1.05rem;
+  color: var(--gold);
+}
+
+/* Mode switch on the left; memory and angle badges on the right. The left padding clears the crimson corner. */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  margin-bottom: 8px;
+  padding-left: 18px;
+}
+
+.topbar-spacer {
+  flex: 1;
+}
+
+.mode-switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--steel-edge);
+  border-radius: var(--radius-key);
+  background: var(--display-bg);
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.mode-seg {
+  padding: 3px 10px;
+  color: var(--text-muted);
+}
+
+.mode-seg.is-on {
+  background: var(--crimson);
+  color: var(--text-on-accent);
+}
+
+.mode-switch:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.memory-indicator {
+  padding: 1px 6px;
+  border: 1px solid var(--gold);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
+
 /* Silver rather than faded text, so the DEG/RAD badge keeps AA contrast on the steel body. */
 .angle-unit {
-  display: block;
-  margin-bottom: 6px;
-  text-align: right;
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   color: var(--text-silver);
+}
+
+/* Phones: the scientific panel stacks above the basic keys, and keys get a little shorter. */
+@media (max-width: 600px) {
+  .calculator {
+    padding: 14px 12px;
+  }
+
+  .keypad {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .keys,
+  .keys-sci {
+    gap: 8px;
+  }
+
+  .key {
+    min-height: 46px;
+    font-size: 1.2rem;
+  }
+
+  .key-sci,
+  .key-mem {
+    font-size: 0.95rem;
+  }
+
 }
 
 /* Effects layer. It is pure motion, so it only shows when motion is allowed. */

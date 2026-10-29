@@ -37,14 +37,18 @@ describe('11. Battle HUD tokens and contrast', () => {
     ['text', 'steel', 1],
     ['text', 'steel-light', 1],
     ['text', 'steel-light', 1.35], // pressed plate
-    ['text-muted', 'display-bg', 1], // history line
+    ['text-muted', 'display-bg', 1], // history line, mode switch off segment
     ['text-silver', 'steel', 1], // fn keys, DEG/RAD badge
     ['text-silver', 'steel-light', 1],
     ['text-silver', 'steel-dark', 1],
     ['text-silver', 'steel-light', 1.35],
-    ['text-on-accent', 'crimson', 1], // equals plate
+    ['text-on-accent', 'crimson', 1], // equals plate, mode switch on segment
     ['text-on-accent', 'crimson-deep', 1],
     ['text-on-accent', 'crimson', 0.8], // pressed equals
+    ['gold', 'steel', 1], // memory indicator, memory keys
+    ['gold', 'steel-dark', 1],
+    ['gold', 'steel-light', 1],
+    ['gold', 'steel-light', 1.35], // pressed memory key
   ];
 
   it.each(pairs)('--%s on --%s (brightness %s) is at least 4.5:1', (fg, bg, scale) => {
