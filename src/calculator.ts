@@ -1,13 +1,13 @@
 // Pure pocket-calculator logic. No React here: every function takes a state
 // and returns a new one, so the component and the tests share one reducer.
 
-export type Op = '+' | '-' | '*' | '/';
+export type Op = '+' | '-' | '*' | '/' | '^';
 export type UnaryFn = 'sqrt' | 'square' | 'reciprocal' | 'sin' | 'cos' | 'tan' | 'ln' | 'log' | 'factorial';
 export type Constant = 'pi' | 'e';
 export type AngleUnit = 'deg' | 'rad';
 
 /** Display glyphs for each operator, shared by the keys and the expression line. */
-export const OP_SYMBOLS: Record<Op, string> = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+export const OP_SYMBOLS: Record<Op, string> = { '+': '+', '-': '−', '*': '×', '/': '÷', '^': '^' };
 
 export type State = {
   display: string;
@@ -24,6 +24,8 @@ export type State = {
   lastExpression: string | null;
   /** Survives AC and Error, like the mode switch on a real calculator. */
   angleUnit: AngleUnit;
+  /** The stored number (MS/MR/MC), or null when empty. Survives AC and Error. */
+  memory: number | null;
 };
 
 export type Action =
@@ -38,7 +40,10 @@ export type Action =
   | { type: 'percent' }
   | { type: 'unary'; value: UnaryFn }
   | { type: 'constant'; value: Constant }
-  | { type: 'toggleAngleUnit' };
+  | { type: 'toggleAngleUnit' }
+  | { type: 'memoryStore' }
+  | { type: 'memoryRecall' }
+  | { type: 'memoryClear' };
 
 const MAX_DIGITS = 15;
 
@@ -54,11 +59,12 @@ export function createState(): State {
     error: false,
     lastExpression: null,
     angleUnit: 'deg',
+    memory: null,
   };
 }
 
 function reset(state: State): State {
-  return { ...createState(), angleUnit: state.angleUnit };
+  return { ...createState(), angleUnit: state.angleUnit, memory: state.memory };
 }
 
 function errorState(state: State): State {
@@ -81,6 +87,10 @@ export function compute(a: number, op: Op, b: number): number | null {
     case '/':
       if (b === 0) return null;
       result = a / b;
+      break;
+    case '^':
+      // NaN (e.g. (-8)^0.5) and overflow are caught by the finite check below.
+      result = Math.pow(a, b);
       break;
   }
   return Number.isFinite(result) ? result : null;
@@ -258,10 +268,29 @@ export function applyUnary(state: State, fn: UnaryFn): State {
   return { ...withResult(state, result, { waitingForOperand: false }), overwrite: true };
 }
 
-export function inputConstant(state: State, c: Constant): State {
-  const display = formatNumber(c === 'pi' ? Math.PI : Math.E);
+/** Enters n as the operand, like typing it; recovers from Error. */
+function enterValue(state: State, n: number): State {
+  const display = formatNumber(n);
   if (state.error) return { ...reset(state), display, overwrite: true };
   return { ...state, display, waitingForOperand: false, overwrite: true };
+}
+
+export function inputConstant(state: State, c: Constant): State {
+  return enterValue(state, c === 'pi' ? Math.PI : Math.E);
+}
+
+export function memoryStore(state: State): State {
+  if (state.error) return { ...state };
+  return { ...state, memory: parseFloat(state.display) };
+}
+
+export function memoryRecall(state: State): State {
+  if (state.memory === null) return { ...state };
+  return enterValue(state, state.memory);
+}
+
+export function memoryClear(state: State): State {
+  return { ...state, memory: null };
 }
 
 export function toggleAngleUnit(state: State): State {
@@ -294,6 +323,12 @@ function apply(state: State, action: Action): State {
       return inputConstant(state, action.value);
     case 'toggleAngleUnit':
       return toggleAngleUnit(state);
+    case 'memoryStore':
+      return memoryStore(state);
+    case 'memoryRecall':
+      return memoryRecall(state);
+    case 'memoryClear':
+      return memoryClear(state);
   }
 }
 

@@ -10,8 +10,9 @@ import {
   reducer,
 } from './calculator';
 
-// Short-hand: '7' digit, '.' decimal, '+-*/' operators, '=' equals, 'AC', 'CE', '<' backspace, '±', '%',
-// '√ x² 1/x sin cos tan ln log !' functions, 'π' and 'e' constants, 'RAD' toggles the angle unit.
+// Short-hand: '7' digit, '.' decimal, '+-*/^' operators, '=' equals, 'AC', 'CE', '<' backspace, '±', '%',
+// '√ x² 1/x sin cos tan ln log !' functions, 'π' and 'e' constants, 'RAD' toggles the angle unit,
+// 'MS' 'MR' 'MC' store, recall and clear memory.
 function toAction(token: string): Action {
   if (/^\d$/.test(token)) return { type: 'digit', value: token };
   switch (token) {
@@ -21,6 +22,7 @@ function toAction(token: string): Action {
     case '-':
     case '*':
     case '/':
+    case '^':
       return { type: 'operator', value: token as Op };
     case '=':
       return { type: 'equals' };
@@ -40,6 +42,12 @@ function toAction(token: string): Action {
       return { type: 'constant', value: 'e' };
     case 'RAD':
       return { type: 'toggleAngleUnit' };
+    case 'MS':
+      return { type: 'memoryStore' };
+    case 'MR':
+      return { type: 'memoryRecall' };
+    case 'MC':
+      return { type: 'memoryClear' };
   }
   if (token in UNARY) return { type: 'unary', value: UNARY[token] };
   throw new Error(`unknown token ${token}`);
@@ -323,6 +331,77 @@ describe('9. angle unit', () => {
     const state = fold('1 / 0 = RAD'.split(' '));
     expect(state.display).toBe('Error');
     expect(state.angleUnit).toBe('rad');
+  });
+});
+
+describe('11. power', () => {
+  it.each([
+    ['2 ^ 3 =', '8'],
+    ['2 ^ 0 . 5 =', '1.41421356237'],
+    ['2 ^ 3 ± =', '0.125'],
+    ['9 ^ 0 =', '1'],
+    ['2 ^ 3 ^ 2 =', '64'],
+    ['2 ^ 3 = =', '512'],
+    ['1 + 2 ^ 2 =', '9'],
+  ])('%s shows %s', (seq, expected) => {
+    expect(run(seq)).toBe(expected);
+  });
+
+  it.each(['8 ± ^ 0 . 5 =', '1 0 ^ 4 0 0 ='])('%s shows Error', (seq) => {
+    expect(run(seq)).toBe('Error');
+  });
+
+  it('shows 2 ^ 3 on the expression line and 2 ^ 3 = in the history', () => {
+    expect(expressions('2 ^ 3')).toEqual(['2', '2 ^', '2 ^ 3']);
+    expect(fold('2 ^ 3 ='.split(' ')).lastExpression).toBe('2 ^ 3 =');
+  });
+});
+
+describe('12. memory', () => {
+  it('starts empty', () => {
+    expect(createState().memory).toBeNull();
+  });
+
+  it('MS stores the shown value and leaves the display alone', () => {
+    const state = fold('4 2 MS'.split(' '));
+    expect(state.memory).toBe(42);
+    expect(state.display).toBe('42');
+  });
+
+  it('MS AC MR brings the stored value back', () => {
+    expect(run('4 2 MS AC MR')).toBe('42');
+    expect(fold('4 2 MS AC'.split(' ')).memory).toBe(42);
+  });
+
+  it('MR enters the value as the operand: 4 2 MS AC 8 + MR = shows 50', () => {
+    expect(run('4 2 MS AC 8 + MR =')).toBe('50');
+    expect(displays('4 2 MS AC MR 7')).toEqual(['4', '42', '42', '0', '42', '7']);
+  });
+
+  it('MC MR changes nothing', () => {
+    expect(run('4 2 MS MC AC MR')).toBe('0');
+    expect(run('7 MC MR')).toBe('7');
+    expect(fold('4 2 MS MC'.split(' ')).memory).toBeNull();
+  });
+
+  it('MR with empty memory does nothing', () => {
+    expect(run('9 MR')).toBe('9');
+  });
+
+  it('5 / 0 = MS stores nothing', () => {
+    const state = fold('5 / 0 = MS'.split(' '));
+    expect(state.display).toBe('Error');
+    expect(state.memory).toBeNull();
+  });
+
+  it('memory survives Error, and MR recovers from Error', () => {
+    expect(fold('6 MS 5 / 0 ='.split(' ')).memory).toBe(6);
+    expect(run('6 MS 5 / 0 = MR')).toBe('6');
+    expect(formatExpression(fold('6 MS 5 / 0 = MR'.split(' ')))).toBe('6');
+  });
+
+  it('stores decimals and negatives', () => {
+    expect(run('2 . 5 ± MS AC MR')).toBe('-2.5');
   });
 });
 
