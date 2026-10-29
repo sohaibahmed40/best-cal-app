@@ -24,3 +24,26 @@ The script can only replay the events macOS sends. It cannot make WebKit on Wind
 3. Hold `5`, press and hold Cmd, release `5`, then release Cmd. No button stays sunk or lit, and the display reads `5`.
 4. Optional, for the cause: in the Web Inspector console run
    `addEventListener('keyup', e => console.log('keyup', e.code))` and repeat step 3. Only `MetaLeft` (or `MetaRight`) is logged, with no `Digit5`. That missing keyup is what the Cmd handler covers.
+
+## Basic and Scientific layout (CODE-CATALYST-5)
+
+### Automated: `npm run check:layout`
+
+```sh
+npx playwright install chromium   # once per machine
+npm run check:layout
+npm run check:layout -- --screenshots   # also rewrites docs/screenshots/
+```
+
+`scripts/check-layout.mjs` starts the Vite dev server and drives Chromium at 1280×800. It prints `ok`/`FAIL` per check and exits non-zero on any failure.
+
+- **Opens in Basic.** The switch has `aria-checked="false"`, no scientific button is in the page, 24 keys are shown, and the Calculator section is wider than tall and under 480 px tall (about 560 × 420).
+- **Switch and back.** Clicking the switch shows all 13 scientific buttons and the section stays wider than tall (about 920 × 420). Clicking again removes them and restores the Basic size.
+- **Memory across modes.** 42, MS, AC, switch to Scientific, MR shows `42`; switch back, AC, MR shows `42` again.
+- **Phone (360×740).** Basic mode is still wider than tall, and neither mode scrolls sideways.
+
+### Manual
+
+1. `npm run dev` and open the printed URL. The calculator shows BASIC highlighted, the 6×4 key grid with MC/MR/MS on the left, and no sin/cos/tan keys. It is clearly wider than tall.
+2. Click **SCI**. The scientific panel appears on the left and DEG shows at the top right. Try `30 sin` → `0.5`, `90 cos` → `0`, `9 √` → `3`, `2 xʸ 3 =` → `8`, `100 log` → `2`, `e ln` → `1`.
+3. Type `42`, press MS (an `M` badge appears), AC, click the switch back to BASIC, press MR: `42`.

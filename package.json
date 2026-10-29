@@ -11,7 +11,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "check:keys": "node scripts/check-key-press.mjs"
+    "check:keys": "node scripts/check-key-press.mjs",
+    "check:layout": "node scripts/check-layout.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

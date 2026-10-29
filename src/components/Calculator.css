@@ -322,10 +322,29 @@ body {
   color: var(--text-silver);
 }
 
-/* Phones: the scientific panel stacks above the basic keys, and keys get a little shorter. */
+/* Phones: the scientific panel stacks above the basic keys, and keys and display get shorter
+   so Basic mode stays wider than tall at 360px. */
 @media (max-width: 600px) {
   .calculator {
-    padding: 14px 12px;
+    padding: 12px;
+  }
+
+  .topbar {
+    margin-bottom: 6px;
+  }
+
+  .display {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+  }
+
+  .display-history {
+    font-size: 0.8rem;
+  }
+
+  /* :not() so the long-expression size still wins. */
+  .display-main:not(.display-main-long) {
+    font-size: 1.8rem;
   }
 
   .keypad {
@@ -339,7 +358,7 @@ body {
   }
 
   .key {
-    min-height: 46px;
+    min-height: 38px;
     font-size: 1.2rem;
   }
 
@@ -347,7 +366,6 @@ body {
   .key-mem {
     font-size: 0.95rem;
   }
-
 }
 
 /* Effects layer. It is pure motion, so it only shows when motion is allowed. */
