@@ -192,17 +192,20 @@ body {
   background: var(--plate-fill);
 }
 
-.key:active {
+.key:active,
+.key.key-pressed {
   transform: translateY(1px);
 }
 
-.key:active::after {
+.key:active::after,
+.key.key-pressed::after {
   box-shadow: var(--shadow-key-pressed);
   filter: brightness(1.35);
 }
 
 /* Brightening the crimson plate would drop white text below 4.5:1, so equals darkens instead. */
-.key-equals:active::after {
+.key-equals:active::after,
+.key-equals.key-pressed::after {
   filter: brightness(0.8);
 }
 
@@ -280,7 +283,8 @@ body {
     transition: transform 80ms ease;
   }
 
-  .key:active::after {
+  .key:active::after,
+  .key.key-pressed::after {
     animation: plate-flash 160ms ease-out;
   }
 

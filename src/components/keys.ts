@@ -72,3 +72,12 @@ export const KEYS: Key[] = [
 
   { label: '%', action: { type: 'percent' }, ariaLabel: 'percent', className: 'key-fn key-wide' },
 ];
+
+// The on-screen button that performs `action`, if any.
+export function findKeyForAction(action: Action): Key | undefined {
+  return KEYS.find(
+    (key) =>
+      key.action.type === action.type &&
+      (!('value' in action) || ('value' in key.action && key.action.value === action.value)),
+  );
+}
