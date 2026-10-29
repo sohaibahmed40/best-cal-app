@@ -6,5 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],
+    // Process the stylesheet so contrast.test.ts can read its tokens via `?raw`.
+    css: { include: [/Calculator\.css/] },
   },
 });

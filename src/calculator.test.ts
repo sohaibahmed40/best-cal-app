@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { type Action, type Op, type State, type UnaryFn, createState, formatNumber, reducer } from './calculator';
+import {
+  type Action,
+  type Op,
+  type State,
+  type UnaryFn,
+  createState,
+  formatExpression,
+  formatNumber,
+  reducer,
+} from './calculator';
 
 // Short-hand: '7' digit, '.' decimal, '+-*/' operators, '=' equals, 'AC', 'CE', '<' backspace, '±', '%',
 // '√ x² 1/x sin cos tan ln log !' functions, 'π' and 'e' constants, 'RAD' toggles the angle unit.
@@ -314,5 +323,48 @@ describe('9. angle unit', () => {
     const state = fold('1 / 0 = RAD'.split(' '));
     expect(state.display).toBe('Error');
     expect(state.angleUnit).toBe('rad');
+  });
+});
+
+/** Expression line after each token. */
+function expressions(sequence: string): string[] {
+  const tokens = sequence.split(' ');
+  return tokens.map((_, i) => formatExpression(fold(tokens.slice(0, i + 1))));
+}
+
+describe('10. expression', () => {
+  it('20 + 20 builds up as it is typed', () => {
+    expect(expressions('2 0 + 2 0')).toEqual(['2', '20', '20 +', '20 + 2', '20 + 20']);
+  });
+
+  it.each([
+    ['2 0 +', '20 +'],
+    ['5 + *', '5 ×'],
+    ['2 + 3 *', '5 ×'],
+    ['9 - 3', '9 − 3'],
+    ['8 / 2 .', '8 ÷ 2.'],
+    ['5 + ±', '5 + -5'],
+    ['2 0 0 + 1 0 %', '200 + 20'],
+    ['5 / 0 =', 'Error'],
+    ['2 0 + 2 0 =', '40'],
+    ['9 + 1 6 √', '9 + 4'],
+    ['2 * π', '2 × 3.14159265359'],
+    ['4 ± √', 'Error'],
+  ])('%s shows %s', (seq, expected) => {
+    expect(formatExpression(fold(seq.split(' ')))).toBe(expected);
+  });
+
+  it.each([
+    ['2 0 + 2 0 =', '20 + 20 ='],
+    ['5 + 2 = =', '7 + 2 ='],
+    ['2 0 + 2 0 = 3', null],
+    ['2 0 + 2 0 = +', null],
+    ['5 =', null],
+    ['5 + 2 = AC 5 =', null],
+    ['5 / 0 =', null],
+    ['2 0 + 2 0 = √', null],
+    ['2 0 + 2 0 = RAD', null],
+  ])('after %s the history is %s', (seq, expected) => {
+    expect(fold(seq.split(' ')).lastExpression).toBe(expected);
   });
 });
