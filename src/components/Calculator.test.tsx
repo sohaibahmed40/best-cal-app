@@ -140,7 +140,8 @@ describe('keyboard press feedback', () => {
     expectOnlyPressed('multiply');
     fireEvent.keyUp(window, { key: '8', code: 'Digit8' });
     expectNonePressed();
-    expect(display()).toHaveTextContent(/^0$/);
+    // The keydown pressed multiply once; the keyup (key "8") typed nothing.
+    expect(display()).toHaveTextContent(/^0 ×$/);
   });
 
   it('Enter and = held together keep equals pressed until both are released', () => {
