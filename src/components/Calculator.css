@@ -62,7 +62,8 @@ body {
   filter: brightness(1.15);
 }
 
-.key:active {
+.key:active,
+.key.key-pressed {
   filter: brightness(0.9);
 }
 
