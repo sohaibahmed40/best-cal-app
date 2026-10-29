@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:keys": "node scripts/check-key-press.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -25,6 +26,7 @@
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "6.1.2",
     "jsdom": "29.1.1",
+    "playwright": "1.64.1",
     "typescript": "5.9.3",
     "vite": "8.3.5",
     "vitest": "4.1.12"

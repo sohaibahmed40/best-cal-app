@@ -35,7 +35,7 @@ npm run build   # type-check (strict) and build to dist/
 | x²     | —                  | Square                                      |
 | 1/x    | —                  | Reciprocal                                  |
 
-Holding a key highlights the matching button until the key is released.
+Holding a key highlights the matching button until the key is released. `npm run check:keys` checks this in real Chromium and WebKit; see [docs/manual-checks.md](docs/manual-checks.md) for it and the Safari-on-macOS steps.
 
 ## Behaviour
 
