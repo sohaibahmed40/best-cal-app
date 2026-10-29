@@ -46,6 +46,8 @@ Holding a key highlights the matching button until the key is released.
   - With no pending operator, `x %` gives `x / 100` (`50 %` → `0.5`).
   - After `+` or `−`, `b %` gives `a × b / 100`, so `200 + 10 % =` → `220`.
   - After `×` or `÷`, `b %` gives `b / 100`, so `50 × 10 % =` → `5`.
+- **Expression line.** The display shows the calculation as it is typed (`20 +`, then `20 + 20`). After `=`, a small `20 + 20 =` line sits above the result until the next key.
+- **Effects.** Each press flashes a kanji (撃 digits, 斬 operators and %, 消 AC/CE/⌫ and the scientific, π/e and DEG/RAD keys); `=` stamps "決着 FINISH" and an error shows a "限界突破 SYSTEM BREAK" banner. The calculator gets `is-pending`, `is-result` or `is-error` to match. The effects layer is `aria-hidden`, sits outside the display, and only animates when `prefers-reduced-motion` allows it.
 - **Divide by zero** shows `Error`. Only a digit (which starts a fresh calculation) or AC does anything until then.
 - **Scientific functions** apply to the displayed number and keep any pending operator: `9 + 16 √ =` gives `13`. Right after an operator they use the shown value, so `9 + √ =` gives `9 + 3`.
 - **π and e** replace the current entry: `2 × π =` gives `6.28318530718`.
@@ -59,3 +61,5 @@ Holding a key highlights the matching button until the key is released.
 - `src/calculator.ts`: pure calculator logic and the reducer. No React.
 - `src/components/Calculator.tsx`: the UI, driven by `useReducer` from button clicks and a `keydown` listener.
 - `src/components/keys.ts` and `keyboard.ts`: the button list and the keyboard mapping.
+- `src/components/Calculator.css`: dark shonen "Battle HUD" style, token-driven (colours, radii, shadows on `:root`), motion disabled under `prefers-reduced-motion`. `src/components/contrast.test.ts` fails if a colour literal appears outside `:root` or a text/background pair drops below WCAG AA 4.5:1. Current ratios: `--text` 12.0–17.6 on the steel plates and display (9.3 on a pressed plate), `--text-silver` 8.4–10.2 (6.5 pressed), `--text-muted` 6.1 on `--display-bg`, `--text-on-accent` 4.9 on `--crimson`, 8.3 on `--crimson-deep` and 7.0 on the pressed equals key.
+- `docs/screenshots/`: idle, `20 +`, the result and `Error` at 360 px and desktop width.
