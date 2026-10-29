@@ -59,4 +59,5 @@ npm run build   # type-check (strict) and build to dist/
 - `src/calculator.ts`: pure calculator logic and the reducer. No React.
 - `src/components/Calculator.tsx`: the UI, driven by `useReducer` from button clicks and a `keydown` listener.
 - `src/components/keys.ts` and `keyboard.ts`: the button list and the keyboard mapping.
-- `src/components/Calculator.css`: dark shonen "Battle HUD" style, token-driven (colours, radii, shadows on `:root`), motion disabled under `prefers-reduced-motion`.
+- `src/components/Calculator.css`: dark shonen "Battle HUD" style, token-driven (colours, radii, shadows on `:root`), motion disabled under `prefers-reduced-motion`. `src/components/contrast.test.ts` fails if a colour literal appears outside `:root` or a text/background pair drops below WCAG AA 4.5:1. Current ratios: `--text` 12.0–17.6 on the steel plates and display (9.3 on a pressed plate), `--text-silver` 8.4–10.2 (6.5 pressed), `--text-muted` 6.1 on `--display-bg`, `--text-on-accent` 4.9 on `--crimson`, 8.3 on `--crimson-deep` and 7.0 on the pressed equals key.
+- `docs/screenshots/`: idle, `20 +`, the result and `Error` at 360 px and desktop width.
