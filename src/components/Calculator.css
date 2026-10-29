@@ -283,7 +283,8 @@ body {
     transition: transform 80ms ease;
   }
 
-  .key:active::after {
+  .key:active::after,
+  .key.key-pressed::after {
     animation: plate-flash 160ms ease-out;
   }
 
