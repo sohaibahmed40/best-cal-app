@@ -6,13 +6,15 @@ import Calculator from './Calculator';
 import { keyToAction } from './keyboard';
 
 // StrictMode double-mounts effects, so a leaked listener would double every key press.
-function setup() {
+// The calculator opens in Basic mode; `scientific: true` flips the mode switch first.
+function setup({ scientific = false } = {}) {
   const user = userEvent.setup();
   const utils = render(
     <StrictMode>
       <Calculator />
     </StrictMode>,
   );
+  if (scientific) fireEvent.click(screen.getByRole('switch', { name: 'scientific mode' }));
   const display = () => screen.getByTestId('display');
   const history = () => screen.getByTestId('expression-history');
   const click = (name: string) => user.click(screen.getByRole('button', { name }));
@@ -238,13 +240,13 @@ describe('scientific keys', () => {
     [['pi'], '3.14159265359'],
     [['2', 'multiply', 'pi', 'equals'], '6.28318530718'],
   ])('clicking %j shows %s', async (names, expected) => {
-    const { display, click } = setup();
+    const { display, click } = setup({ scientific: true });
     for (const name of names) await click(name);
     expect(display().textContent).toBe(expected);
   });
 
   it('invalid input shows Error, and a digit recovers', async () => {
-    const { display, click } = setup();
+    const { display, click } = setup({ scientific: true });
     for (const name of ['4', 'toggle sign', 'square root']) await click(name);
     expect(display()).toHaveTextContent(/^Error$/);
     await click('7');
@@ -254,7 +256,7 @@ describe('scientific keys', () => {
   });
 
   it('the indicator shows DEG, then RAD after clicking angle unit', async () => {
-    const { display, click } = setup();
+    const { display, click } = setup({ scientific: true });
     const unit = () => screen.getByTestId('angle-unit');
     expect(unit()).toHaveTextContent(/^DEG$/);
     await click('angle unit');
@@ -266,9 +268,194 @@ describe('scientific keys', () => {
   });
 
   it('typing 5! shows 120', async () => {
-    const { user, display } = setup();
+    const { user, display } = setup({ scientific: true });
     await user.keyboard('5!');
     expect(display()).toHaveTextContent(/^120$/);
+  });
+});
+
+const SCIENTIFIC_NAMES = [
+  'sine',
+  'cosine',
+  'tangent',
+  'square root',
+  'power',
+  'natural log',
+  'log base 10',
+  'square',
+  'reciprocal',
+  'pi',
+  "euler's number",
+  'angle unit',
+  'factorial',
+];
+const BASIC_NAMES = [
+  ...'0123456789'.split(''),
+  'add',
+  'subtract',
+  'multiply',
+  'divide',
+  'equals',
+  'decimal point',
+  'toggle sign',
+  'percent',
+  'all clear',
+  'clear entry',
+  'backspace',
+];
+const MEMORY_NAMES = ['memory store', 'memory recall', 'memory clear'];
+
+describe('modes and memory', () => {
+  const modeSwitch = () => screen.getByRole('switch', { name: 'scientific mode' });
+  const memoryIndicator = () => screen.queryByTestId('memory-indicator');
+
+  it('opens in Basic mode with only the basic and memory keys', () => {
+    const { container } = setup();
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false');
+    for (const name of SCIENTIFIC_NAMES) expect(screen.queryByRole('button', { name })).toBeNull();
+    for (const name of [...BASIC_NAMES, ...MEMORY_NAMES]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    expect(container.querySelectorAll('.key')).toHaveLength(24);
+    expect(container.querySelector('.keys-sci')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Calculator' })).not.toHaveClass('is-scientific');
+    expect(screen.queryByTestId('angle-unit')).toBeNull();
+  });
+
+  it('the switch shows the scientific keys, and switching back hides them', async () => {
+    const { user, container } = setup();
+    await user.click(modeSwitch());
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true');
+    for (const name of [...SCIENTIFIC_NAMES, ...BASIC_NAMES, ...MEMORY_NAMES]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    expect(container.querySelectorAll('.key')).toHaveLength(37);
+    expect(screen.getByRole('region', { name: 'Calculator' })).toHaveClass('is-scientific');
+    expect(screen.getByTestId('angle-unit')).toHaveTextContent(/^DEG$/);
+
+    await user.click(modeSwitch());
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('button', { name: 'sine' })).toBeNull();
+    expect(container.querySelectorAll('.key')).toHaveLength(24);
+  });
+
+  it('the switch works from the keyboard', async () => {
+    const { user } = setup();
+    modeSwitch().focus();
+    await user.keyboard(' ');
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it.each([
+    [['3', '0', 'sine'], '0.5'],
+    [['9', '0', 'cosine'], '0'],
+    [['4', '5', 'tangent'], '1'],
+    [['9', 'square root'], '3'],
+    [['2', 'power', '3', 'equals'], '8'],
+    [['1', '0', '0', 'log base 10'], '2'],
+    [["euler's number", 'natural log'], '1'],
+  ])('in Scientific mode, clicking %j shows %s', async (names, expected) => {
+    const { display, click } = setup({ scientific: true });
+    for (const name of names) await click(name);
+    expect(display().textContent).toBe(expected);
+  });
+
+  it('shows the power expression as 2 ^ 3', async () => {
+    const { display, history, click } = setup({ scientific: true });
+    for (const name of ['2', 'power', '3']) await click(name);
+    expect(display()).toHaveTextContent(/^2 \^ 3$/);
+    await click('equals');
+    expect(history()).toHaveTextContent(/^2 \^ 3 =$/);
+  });
+
+  it.each([false, true])('scientific %s: exactly three memory keys, and no M+ or M−', (scientific) => {
+    setup({ scientific });
+    const memoryKeys = screen.getAllByRole('button', { name: /^memory / });
+    expect(memoryKeys.map((b) => b.getAttribute('aria-label')).sort()).toEqual([...MEMORY_NAMES].sort());
+    expect(memoryKeys.map((b) => b.textContent).sort()).toEqual(['MC', 'MR', 'MS']);
+    expect(screen.queryByRole('button', { name: /memory (add|subtract|plus|minus)/i })).toBeNull();
+    for (const label of ['M+', 'M−', 'M-']) expect(screen.queryByText(label)).toBeNull();
+  });
+
+  it('store, all clear, recall and clear', async () => {
+    const { display, click } = setup();
+    expect(memoryIndicator()).toBeNull();
+    for (const name of ['4', '2', 'memory store']) await click(name);
+    expect(display()).toHaveTextContent(/^42$/);
+    expect(memoryIndicator()).toHaveTextContent(/^M$/);
+    await click('all clear');
+    expect(display()).toHaveTextContent(/^0$/);
+    await click('memory recall');
+    expect(display()).toHaveTextContent(/^42$/);
+    for (const name of ['add', '8', 'equals']) await click(name);
+    expect(display()).toHaveTextContent(/^50$/);
+    await click('memory clear');
+    expect(memoryIndicator()).toBeNull();
+    await click('all clear');
+    await click('memory recall');
+    expect(display()).toHaveTextContent(/^0$/);
+  });
+
+  it('a stored number survives switching to Scientific and back', async () => {
+    const { user, display, click } = setup();
+    for (const name of ['4', '2', 'memory store', 'all clear']) await click(name);
+    expect(memoryIndicator()).toBeInTheDocument();
+
+    await user.click(modeSwitch());
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true');
+    expect(memoryIndicator()).toBeInTheDocument();
+    await click('memory recall');
+    expect(display()).toHaveTextContent(/^42$/);
+
+    await user.click(modeSwitch());
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false');
+    expect(memoryIndicator()).toBeInTheDocument();
+    await click('all clear');
+    await click('memory recall');
+    expect(display()).toHaveTextContent(/^42$/);
+    expect(memoryIndicator()).toBeInTheDocument();
+  });
+
+  it('switching mode keeps the calculation in progress', async () => {
+    const { user, display, click } = setup();
+    for (const name of ['1', '2', 'add', '3']) await click(name);
+    await user.click(modeSwitch());
+    expect(display()).toHaveTextContent(/^12 \+ 3$/);
+    await click('equals');
+    expect(display()).toHaveTextContent(/^15$/);
+  });
+
+  it('the keyboard only works for keys on screen: ^ and ! do nothing in Basic mode', async () => {
+    const { user, display } = setup();
+    await user.keyboard('2^3');
+    expect(display()).toHaveTextContent(/^23$/);
+    await user.keyboard('{Escape}5!');
+    expect(display()).toHaveTextContent(/^5$/);
+
+    await user.click(modeSwitch());
+    await user.keyboard('{Escape}2^3{Enter}');
+    expect(display()).toHaveTextContent(/^8$/);
+    await user.keyboard('{Escape}5!');
+    expect(display()).toHaveTextContent(/^120$/);
+  });
+
+  it('holding ^ in Scientific mode marks only the power key', () => {
+    setup({ scientific: true });
+    fireEvent.keyDown(window, { key: '^', code: 'Digit6', shiftKey: true });
+    expect(screen.getByRole('button', { name: 'power' })).toHaveAttribute('data-pressed', 'true');
+    expect(document.querySelectorAll('[data-pressed]')).toHaveLength(1);
+    fireEvent.keyUp(window, { key: '6', code: 'Digit6' });
+    expect(document.querySelectorAll('[data-pressed]')).toHaveLength(0);
+  });
+
+  it('switching mode does not re-attach the key listeners', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const { user } = setup();
+    const before = add.mock.calls.filter(([type]) => type === 'keydown').length;
+    await user.click(modeSwitch());
+    await user.click(modeSwitch());
+    expect(add.mock.calls.filter(([type]) => type === 'keydown').length).toBe(before);
+    vi.restoreAllMocks();
   });
 });
 
@@ -284,6 +471,7 @@ describe('keyToAction', () => {
     expect(keyToAction('Delete')).toEqual({ type: 'clearEntry' });
     expect(keyToAction('%')).toEqual({ type: 'percent' });
     expect(keyToAction('!')).toEqual({ type: 'unary', value: 'factorial' });
+    expect(keyToAction('^')).toEqual({ type: 'operator', value: '^' });
     expect(keyToAction('a')).toBeNull();
   });
 });
@@ -341,8 +529,8 @@ describe('9. expression display', () => {
 
 describe('10. battle HUD effects', () => {
   // The effects layer is aria-hidden decoration, so it is found by class, not by role.
-  function setupFx() {
-    const utils = setup();
+  function setupFx(options?: { scientific?: boolean }) {
+    const utils = setup(options);
     const calculator = () => screen.getByRole('region', { name: 'Calculator' });
     const fx = (selector: string) => utils.container.querySelector(`.fx ${selector}`);
     return { ...utils, calculator, fx };
@@ -382,7 +570,7 @@ describe('10. battle HUD effects', () => {
   });
 
   it('flashes the kanji for each key group, and none for equals', async () => {
-    const { fx, click } = setupFx();
+    const { fx, click } = setupFx({ scientific: true });
     expect(fx('.fx-kanji')).toBeNull();
     await click('7');
     expect(fx('.fx-kanji-digit')).toHaveTextContent('撃');
@@ -390,7 +578,7 @@ describe('10. battle HUD effects', () => {
     expect(fx('.fx-kanji-op')).toHaveTextContent('斬');
     await click('backspace');
     expect(fx('.fx-kanji-fn')).toHaveTextContent('消');
-    for (const name of ['sine', 'pi', 'angle unit']) {
+    for (const name of ['sine', 'pi', 'angle unit', 'memory store', 'memory recall', 'memory clear']) {
       await click(name);
       expect(fx('.fx-kanji-fn')).toHaveTextContent('消');
       expect(fx('.fx-kanji-digit')).toBeNull();

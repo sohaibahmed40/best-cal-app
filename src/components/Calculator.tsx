@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { type Action, createState, formatExpression, reducer } from '../calculator';
 import { keyToAction } from './keyboard';
-import { findKeyForAction, KEYS } from './keys';
+import { BASIC_KEYS, findKeyForAction, type Key, KEYS, SCIENTIFIC_KEYS } from './keys';
 import './Calculator.css';
 
 type FxGroup = 'digit' | 'op' | 'fn' | 'equals';
+type Mode = 'basic' | 'scientific';
 
 // The kanji flashed on a key press. Equals has none: the FINISH frame plays instead.
 const FX_KANJI: Record<FxGroup, string | null> = { digit: '撃', op: '斬', fn: '消', equals: null };
@@ -21,6 +22,9 @@ function fxGroup(action: Action): FxGroup {
     case 'unary':
     case 'constant':
     case 'toggleAngleUnit':
+    case 'memoryStore':
+    case 'memoryRecall':
+    case 'memoryClear':
       return 'fn';
     case 'equals':
       return 'equals';
@@ -31,6 +35,12 @@ function fxGroup(action: Action): FxGroup {
 
 export default function Calculator() {
   const [state, dispatch] = useReducer(reducer, undefined, createState);
+  // Component state, not reducer state: switching mode never touches the calculation or memory.
+  const [mode, setMode] = useState<Mode>('basic');
+  const visibleKeys = mode === 'scientific' ? KEYS : BASIC_KEYS;
+  // Read by the key listeners, so they are not re-attached on every switch.
+  const visibleKeysRef = useRef(visibleKeys);
+  visibleKeysRef.current = visibleKeys;
   // Buttons held down from the keyboard: event.code → button ariaLabel.
   const [pressed, setPressed] = useState<ReadonlyMap<string, string>>(() => new Map());
   // Bumping `count` remounts the effects layer so its CSS animations replay on every press.
@@ -50,11 +60,12 @@ export default function Calculator() {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       const action = keyToAction(event.key);
       if (!action) return;
+      // The keyboard only does what an on-screen button can: ^ and ! do nothing in Basic mode.
+      const key = findKeyForAction(action, visibleKeysRef.current);
+      if (!key) return;
       // "/" opens quick-find in Firefox, and Enter would also click a focused button.
       if (event.key === '/' || event.key === 'Enter') event.preventDefault();
       press(action);
-      const key = findKeyForAction(action);
-      if (!key) return;
       const { code } = event;
       setPressed((m) => {
         if (m.get(code) === key.ariaLabel) return m;
@@ -92,15 +103,54 @@ export default function Calculator() {
     state.operator !== null && state.waitingForOperand && 'is-pending',
     state.lastExpression !== null && 'is-result',
     state.error && 'is-error',
+    mode === 'scientific' && 'is-scientific',
   ].filter(Boolean);
 
   const pressedLabels = new Set(pressed.values());
 
+  function renderKey(key: Key) {
+    const isPressed = pressedLabels.has(key.ariaLabel);
+    const base = key.className ? `key ${key.className}` : 'key';
+    return (
+      <button
+        key={key.ariaLabel}
+        type="button"
+        className={isPressed ? `${base} key-pressed` : base}
+        aria-label={key.ariaLabel}
+        data-pressed={isPressed ? 'true' : undefined}
+        onClick={() => press(key.action)}
+      >
+        {key.label}
+      </button>
+    );
+  }
+
   return (
     <section className={['calculator', ...modifiers].join(' ')} aria-label="Calculator">
-      <span className="angle-unit" data-testid="angle-unit">
-        {state.angleUnit.toUpperCase()}
-      </span>
+      <div className="topbar">
+        <button
+          type="button"
+          className="mode-switch"
+          role="switch"
+          aria-checked={mode === 'scientific'}
+          aria-label="scientific mode"
+          onClick={() => setMode((m) => (m === 'basic' ? 'scientific' : 'basic'))}
+        >
+          <span className={mode === 'basic' ? 'mode-seg is-on' : 'mode-seg'}>BASIC</span>
+          <span className={mode === 'scientific' ? 'mode-seg is-on' : 'mode-seg'}>SCI</span>
+        </button>
+        <span className="topbar-spacer" />
+        {state.memory !== null && (
+          <span className="memory-indicator" data-testid="memory-indicator" title="A number is stored in memory">
+            M
+          </span>
+        )}
+        {mode === 'scientific' && (
+          <span className="angle-unit" data-testid="angle-unit">
+            {state.angleUnit.toUpperCase()}
+          </span>
+        )}
+      </div>
       <div className="display">
         {/* No aria-live here: the main line already announces the calculation. */}
         <div className="display-history" data-testid="expression-history">
@@ -133,23 +183,9 @@ export default function Calculator() {
           </div>
         )}
       </div>
-      <div className="keys">
-        {KEYS.map((key) => {
-          const isPressed = pressedLabels.has(key.ariaLabel);
-          const base = key.className ? `key ${key.className}` : 'key';
-          return (
-            <button
-              key={key.ariaLabel}
-              type="button"
-              className={isPressed ? `${base} key-pressed` : base}
-              aria-label={key.ariaLabel}
-              data-pressed={isPressed ? 'true' : undefined}
-              onClick={() => press(key.action)}
-            >
-              {key.label}
-            </button>
-          );
-        })}
+      <div className="keypad">
+        {mode === 'scientific' && <div className="keys-sci">{SCIENTIFIC_KEYS.map(renderKey)}</div>}
+        <div className="keys">{BASIC_KEYS.map(renderKey)}</div>
       </div>
     </section>
   );
